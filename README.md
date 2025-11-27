@@ -346,7 +346,6 @@ python3 oci-enumeration.py --list-bucket exact-bucket-name
 ## Documentation
 
 For detailed documentation, see:
-- [Complete Usage Guide](OCI-ENUMERATION-DOCUMENTATION.md)
 - [OCI Python SDK Documentation](https://docs.oracle.com/en-us/iaas/tools/python/latest/)
 - [OCI IAM Policies](https://docs.oracle.com/en-us/iaas/Content/Identity/Concepts/policygetstarted.htm)
 
@@ -404,6 +403,7 @@ If you find this tool useful, please consider giving it a star! ⭐
 
 [![GitHub stars](https://img.shields.io/github/stars/goodycyb3/oci-iam-audit?style=social)](https://github.com/goodycyb3/oci-iam-audit/stargazers)
 [![GitHub forks](https://img.shields.io/github/forks/goodycyb3/oci-iam-audit?style=social)](https://github.com/goodycyb3/oci-iam-audit/network/members)
+
 
 
 </div>
