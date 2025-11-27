@@ -15,22 +15,22 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 **OCI-IAM-AUDIT** is a comprehensive enumeration and security assessment tool designed for Oracle Cloud Infrastructure (OCI) environments. It helps security professionals, penetration testers, and cloud administrators identify IAM misconfigurations, enumerate resources, and assess potential privilege escalation vectors.
 
 ### Key Capabilities
 
-- 🔍 **IAM Enumeration** - Users, groups, policies, and compartments
-- 🔐 **Security Assessment** - Identify dangerous permissions and privilege escalation paths
-- 💾 **Resource Discovery** - Object Storage buckets and compute instances
-- 📊 **Detailed Reporting** - Export results to JSON for further analysis
-- 🎨 **User-Friendly Output** - Color-coded results with clear severity indicators
-- ⚡ **Fast & Efficient** - Optimized API calls with proper error handling
+- **IAM Enumeration** - Users, groups, policies, and compartments
+- **Security Assessment** - Identify dangerous permissions and privilege escalation paths
+- **Resource Discovery** - Object Storage buckets and compute instances
+- **Detailed Reporting** - Export results to JSON for further analysis
+- **User-Friendly Output** - Color-coded results with clear severity indicators
+- **Fast & Efficient** - Optimized API calls with proper error handling
 
 ---
 
-## ✨ Features
+## Features
 
 ### Enumeration Capabilities
 
@@ -63,7 +63,7 @@
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### 1. Clone the Repository
 
@@ -372,7 +372,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 👥 Authors
 
-- **Security Research Team** - *Initial work*
+https://github.com/r007sec and https://github.com/goodycy3
+
 
 ---
 
@@ -388,7 +389,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For questions, issues, or suggestions:
 - Open an issue on GitHub
-- Contact: [your-email@example.com]
 
 ---
 
