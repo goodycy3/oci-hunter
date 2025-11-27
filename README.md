@@ -122,7 +122,7 @@ python3 oci-enumeration.py [OPTIONS]
 ```
 
 #### Enumeration Options
-```bash
+```text
 -u, --user              Enumerate current user identity
 -g, --groups            Enumerate all groups in tenancy
 --user-groups           Enumerate current user's group memberships
