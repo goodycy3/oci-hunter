@@ -9,7 +9,7 @@
 
 **A professional security testing and IAM assessment tool for Oracle Cloud Infrastructure**
 
-[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Command Samples](#CommandSamples) • [Documentation](#documentation)
+[Features](#features) • [Installation](#installation) • [Usage](#usage) • [Command Samples](#Command-Samples) • [Documentation](#documentation)
 
 </div>
 
