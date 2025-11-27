@@ -16,7 +16,6 @@ from typing import Dict, List, Optional
 from datetime import datetime
 import os
 
-# Color codes for better output
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -263,7 +262,6 @@ class OCISecurityScanner:
             "compute_instances": []
         }
         
-        # Get namespace
         try:
             namespace = self.object_storage_client.get_namespace().data
             self._print_info(f"Object Storage Namespace: {namespace}")
@@ -271,7 +269,6 @@ class OCISecurityScanner:
             self._print_error(f"Failed to get namespace: {e}")
             return resources
         
-        # Enumerate compartments if not specified
         compartments_to_check = []
         if compartment_id:
             compartments_to_check = [{"id": compartment_id, "name": "Specified"}]
@@ -279,13 +276,11 @@ class OCISecurityScanner:
             try:
                 comps = self.identity_client.list_compartments(self.tenancy_id).data
                 compartments_to_check = [{"id": c.id, "name": c.name} for c in comps]
-                # Also check root compartment (tenancy)
                 compartments_to_check.append({"id": self.tenancy_id, "name": "Root (Tenancy)"})
             except Exception as e:
                 self._print_error(f"Failed to list compartments: {e}")
                 return resources
         
-        # Check buckets in each compartment
         print(f"\n{Colors.OKCYAN}Scanning for Object Storage Buckets:{Colors.ENDC}\n")
         
         for comp in compartments_to_check:
@@ -479,14 +474,12 @@ Examples:
         """
     )
     
-    # Authentication options
     auth_group = parser.add_argument_group('Authentication Options')
     auth_group.add_argument('-c', '--config', default='~/.oci/config',
                           help='OCI config file path (default: ~/.oci/config)')
     auth_group.add_argument('-p', '--profile', default='DEFAULT',
                           help='OCI config profile to use (default: DEFAULT)')
     
-    # Enumeration options
     enum_group = parser.add_argument_group('Enumeration Options')
     enum_group.add_argument('-u', '--user', action='store_true',
                           help='Enumerate current user identity')
@@ -503,19 +496,16 @@ Examples:
     enum_group.add_argument('-a', '--all', action='store_true',
                           help='Perform full enumeration')
     
-    # Analysis options
     analysis_group = parser.add_argument_group('Analysis Options')
     analysis_group.add_argument('-e', '--escalation', action='store_true',
                               help='Analyze privilege escalation vectors')
     
-    # Object storage options
     storage_group = parser.add_argument_group('Object Storage Options')
     storage_group.add_argument('-l', '--list-bucket', metavar='BUCKET',
                              help='List objects in specified bucket')
     storage_group.add_argument('-d', '--download', nargs=3, metavar=('BUCKET', 'OBJECT', 'DEST'),
                              help='Download object: BUCKET OBJECT DESTINATION')
     
-    # Output options
     output_group = parser.add_argument_group('Output Options')
     output_group.add_argument('-o', '--output', metavar='FILE',
                             help='Export results to JSON file')
@@ -526,14 +516,12 @@ Examples:
     
     args = parser.parse_args()
     
-    # Check if any action flags were provided
     action_flags = [
         args.all, args.user, args.groups, args.user_groups,
         args.policies, args.compartments, args.resources,
         args.escalation, args.list_bucket, args.download
     ]
     
-    # If no action flags provided, show help and exit
     if not any(action_flags):
         if not args.no_banner:
             print_banner()
@@ -541,11 +529,9 @@ Examples:
         print(f"\n{Colors.WARNING}[!] No action specified. Use --help for usage information.{Colors.ENDC}\n")
         sys.exit(0)
     
-    # Print banner unless suppressed
     if not args.no_banner:
         print_banner()
     
-    # Initialize scanner
     scanner = OCISecurityScanner(
         config_file=args.config,
         profile=args.profile,
@@ -554,9 +540,7 @@ Examples:
     
     results = {}
     
-    # Execute requested operations
     if args.all:
-        # Full enumeration
         results["user"] = scanner.enumerate_current_user()
         results["groups"] = scanner.enumerate_groups()
         results["user_groups"] = scanner.enumerate_user_groups()
@@ -567,7 +551,6 @@ Examples:
         if results["policies"]:
             scanner.analyze_privilege_escalation(results["policies"])
     else:
-        # Individual operations
         if args.user:
             results["user"] = scanner.enumerate_current_user()
         
@@ -591,7 +574,6 @@ Examples:
                 results["policies"] = scanner.enumerate_policies()
             scanner.analyze_privilege_escalation(results["policies"])
     
-    # Object storage operations
     if args.list_bucket:
         results["bucket_objects"] = scanner.list_bucket_objects(args.list_bucket)
     
@@ -599,11 +581,9 @@ Examples:
         bucket, obj, dest = args.download
         scanner.download_object(bucket, obj, dest)
     
-    # Export results if requested
     if args.output:
         scanner.export_results(results, args.output)
     
-    # Print completion message
     print(f"\n{Colors.OKGREEN}{Colors.BOLD}Scan complete!{Colors.ENDC}\n")
 
 if __name__ == "__main__":
