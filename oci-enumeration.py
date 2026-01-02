@@ -48,7 +48,7 @@ def print_banner():
     ║                                                              ║
     ║           {Colors.WARNING}⚡ Oracle Cloud IAM Security Scanner ⚡{Colors.OKCYAN}          ║
     ║                                                              ║
-    ║               {Colors.ENDC}Version: {Colors.BOLD}1.0.0{Colors.OKCYAN}  |  {Colors.ENDC}License: {Colors.BOLD}MIT{Colors.OKCYAN}            ║
+    ║               {Colors.ENDC}Version: {Colors.BOLD}2.0.0{Colors.OKCYAN}  |  {Colors.ENDC}License: {Colors.BOLD}MIT{Colors.OKCYAN}            ║
     ║          {Colors.ENDC}For Authorized Security Testing Only{Colors.OKCYAN}               ║
     ║                                                              ║
     ╚══════════════════════════════════════════════════════════════╝
