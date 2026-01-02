@@ -176,6 +176,26 @@ python3 oci-enumeration.py --user-groups
 python3 oci-enumeration.py --policies
 ```
 
+#### Enumerate all OCI Vaults
+```bash
+python3 oci-enumeration.py --vaults
+```
+
+#### Enumerate all secrets across all vaults
+```bash
+python3 oci-enumeration.py --secrets --vault-id <OCI-VAULT-ID>
+```
+
+#### Retrieve a specific secret 
+```bash
+python3 oci-enumeration.py --get-secret <OCID-SECRETE> 
+```
+
+#### Download secret 
+```bash
+python3 oci-enumeration.py --get-secret <OCID-SECRETE> --secret-output secret.txt
+```
+
 ### Advanced Usage
 
 #### Full Enumeration with Output
