@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![OCI-HUNTER Banner](https://img.shields.io/badge/OCI-HUNTER-orange?style=for-the-badge&logo=oracle)
+![OCI-IAM-AUDIT Banner](https://img.shields.io/badge/OCI-IAM--AUDIT-orange?style=for-the-badge&logo=oracle)
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue?style=for-the-badge&logo=python)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![OCI SDK](https://img.shields.io/badge/OCI%20SDK-2.126.4-red?style=for-the-badge)](https://pypi.org/project/oci/)
