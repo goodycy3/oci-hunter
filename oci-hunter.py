@@ -413,6 +413,125 @@ class OCISecurityScanner:
             self._print_error(f"Failed to retrieve secret: {e}")
             return None
 
+    def get_all_secrets(self, vault_id: Optional[str] = None, output_dir: str = "./secrets") -> Dict:
+        """
+        Retrieve all accessible secrets and save them to files
+        
+        Args:
+            vault_id: Optional vault ID to filter secrets
+            output_dir: Directory to save secret files (default: ./secrets)
+        
+        Returns:
+            Dictionary with retrieved and failed secrets
+        """
+        self._print_header("RETRIEVING ALL SECRETS")
+        
+        # Create output directory if it doesn't exist
+        os.makedirs(output_dir, exist_ok=True)
+        self._print_info(f"Output directory: {output_dir}\n")
+        
+        # First, enumerate all secrets
+        secrets_list = self.enumerate_secrets(vault_id=vault_id)
+        
+        if not secrets_list:
+            self._print_warning("No secrets found to retrieve")
+            return {"retrieved": [], "failed": []}
+        
+        print(f"\n{Colors.OKBLUE}[*]{Colors.ENDC} Attempting to retrieve {len(secrets_list)} secret(s)...\n")
+        
+        retrieved_secrets = []
+        failed_secrets = []
+        
+        for idx, secret_info in enumerate(secrets_list, 1):
+            secret_id = secret_info["id"]
+            secret_name = secret_info["name"]
+            
+            # Sanitize filename (remove special characters)
+            safe_filename = "".join(c if c.isalnum() or c in ('-', '_', '.') else '_' for c in secret_name)
+            if not safe_filename.endswith('.txt'):
+                safe_filename += '.txt'
+            
+            output_path = os.path.join(output_dir, safe_filename)
+            
+            try:
+                self._print_info(f"[{idx}/{len(secrets_list)}] Retrieving: {secret_name}")
+                
+                # Get secret bundle
+                secret_bundle = self.secrets_client.get_secret_bundle(secret_id).data
+                
+                secret_data = {
+                    "name": secret_name,
+                    "secret_id": secret_id,
+                    "version_number": secret_bundle.version_number,
+                    "file_path": output_path
+                }
+                
+                if hasattr(secret_bundle, 'secret_bundle_content'):
+                    content = secret_bundle.secret_bundle_content
+                    
+                    if hasattr(content, 'content'):
+                        try:
+                            # Decode base64 content
+                            decoded_content = base64.b64decode(content.content).decode('utf-8')
+                            
+                            # Save to file
+                            with open(output_path, 'w') as f:
+                                f.write(decoded_content)
+                            
+                            file_size = os.path.getsize(output_path)
+                            self._print_success(f"    → Saved to: {output_path} ({file_size} bytes)")
+                            
+                            secret_data["content_preview"] = decoded_content[:50] + "..." if len(decoded_content) > 50 else decoded_content
+                            retrieved_secrets.append(secret_data)
+                            
+                        except Exception as decode_error:
+                            # Handle binary content
+                            self._print_warning(f"    → Binary content, saving as base64")
+                            with open(output_path, 'w') as f:
+                                f.write(content.content)
+                            
+                            file_size = os.path.getsize(output_path)
+                            self._print_success(f"    → Saved to: {output_path} ({file_size} bytes)")
+                            
+                            secret_data["content_type"] = "base64"
+                            retrieved_secrets.append(secret_data)
+                else:
+                    self._print_warning(f"    → No content available")
+                    failed_secrets.append({
+                        "name": secret_name,
+                        "id": secret_id,
+                        "reason": "No content in secret bundle"
+                    })
+                    
+            except oci.exceptions.ServiceError as e:
+                if e.status == 404:
+                    self._print_error(f"    → Not found")
+                    failed_secrets.append({"name": secret_name, "id": secret_id, "reason": "Not found (404)"})
+                elif e.status == 401 or e.status == 403:
+                    self._print_error(f"    → Access denied")
+                    failed_secrets.append({"name": secret_name, "id": secret_id, "reason": "Access denied"})
+                else:
+                    self._print_error(f"    → Service error: {e.message}")
+                    failed_secrets.append({"name": secret_name, "id": secret_id, "reason": str(e.message)})
+            except Exception as e:
+                self._print_error(f"    → Failed: {e}")
+                failed_secrets.append({"name": secret_name, "id": secret_id, "reason": str(e)})
+        
+        # Summary
+        print(f"\n{Colors.BOLD}Secrets Retrieval Summary:{Colors.ENDC}")
+        print(f"  {Colors.OKGREEN}✓ Successfully retrieved: {len(retrieved_secrets)}{Colors.ENDC}")
+        if failed_secrets:
+            print(f"  {Colors.FAIL}✗ Failed retrievals: {len(failed_secrets)}{Colors.ENDC}")
+            print(f"\n{Colors.WARNING}Failed secrets:{Colors.ENDC}")
+            for secret in failed_secrets:
+                print(f"    • {secret['name']} - {secret['reason']}")
+        
+        return {
+            "retrieved": retrieved_secrets,
+            "failed": failed_secrets,
+            "output_directory": output_dir
+        }
+
     def enumerate_resources(self, compartment_id: Optional[str] = None) -> Dict:
         self._print_header("RESOURCE ENUMERATION")
         
@@ -600,6 +719,96 @@ class OCISecurityScanner:
             print(f"     Statement: {finding['statement']}")
             print()
 
+    def download_all_objects(self, bucket_name: str, output_dir: str = ".") -> List[str]:
+        """
+        Download all objects from a specified bucket
+        
+        Args:
+            bucket_name: Name of the bucket
+            output_dir: Directory to save downloaded files (default: current directory)
+        
+        Returns:
+            List of successfully downloaded file paths
+        """
+        self._print_header(f"DOWNLOADING ALL OBJECTS FROM BUCKET: {bucket_name}")
+        
+        # Create output directory if it doesn't exist
+        if output_dir != ".":
+            os.makedirs(output_dir, exist_ok=True)
+            self._print_info(f"Output directory: {output_dir}")
+        
+        # Get namespace
+        try:
+            namespace = self.object_storage_client.get_namespace().data
+        except Exception as e:
+            self._print_error(f"Failed to get namespace: {e}")
+            return []
+        
+        # List all objects in the bucket
+        try:
+            objects = self.object_storage_client.list_objects(
+                namespace,
+                bucket_name
+            ).data.objects
+            
+            if not objects:
+                self._print_warning(f"No objects found in bucket '{bucket_name}'")
+                return []
+            
+            self._print_info(f"Found {len(objects)} object(s) to download\n")
+            
+            downloaded_files = []
+            failed_downloads = []
+            
+            for idx, obj in enumerate(objects, 1):
+                object_name = obj.name
+                
+                # Create the output filename (preserving directory structure if present)
+                output_path = os.path.join(output_dir, object_name)
+                
+                # Create subdirectories if the object name contains paths
+                output_subdir = os.path.dirname(output_path)
+                if output_subdir:
+                    os.makedirs(output_subdir, exist_ok=True)
+                
+                try:
+                    self._print_info(f"[{idx}/{len(objects)}] Downloading: {object_name}")
+                    
+                    # Download the object
+                    get_obj = self.object_storage_client.get_object(
+                        namespace,
+                        bucket_name,
+                        object_name
+                    )
+                    
+                    # Write to file
+                    with open(output_path, 'wb') as f:
+                        for chunk in get_obj.data.raw.stream(1024 * 1024, decode_content=False):
+                            f.write(chunk)
+                    
+                    file_size = os.path.getsize(output_path)
+                    self._print_success(f"    → Saved to: {output_path} ({file_size:,} bytes)")
+                    downloaded_files.append(output_path)
+                    
+                except Exception as e:
+                    self._print_error(f"    → Failed: {e}")
+                    failed_downloads.append(object_name)
+            
+            # Summary
+            print(f"\n{Colors.BOLD}Download Summary:{Colors.ENDC}")
+            print(f"  {Colors.OKGREEN}✓ Successfully downloaded: {len(downloaded_files)}{Colors.ENDC}")
+            if failed_downloads:
+                print(f"  {Colors.FAIL}✗ Failed downloads: {len(failed_downloads)}{Colors.ENDC}")
+                print(f"\n{Colors.WARNING}Failed objects:{Colors.ENDC}")
+                for obj_name in failed_downloads:
+                    print(f"    • {obj_name}")
+            
+            return downloaded_files
+            
+        except Exception as e:
+            self._print_error(f"Failed to list/download objects: {e}")
+            return []
+
     def export_results(self, results: Dict, filename: str = "oci_enum_results.json"):
         try:
             results["timestamp"] = datetime.now().isoformat()
@@ -628,10 +837,15 @@ Examples:
   %(prog)s --secrets
   %(prog)s --get-secret ocid1.vaultsecret.oc1...
   %(prog)s --get-secret ocid1.vaultsecret.oc1... --secret-output secret.txt
+  %(prog)s --get-all-secrets
+  %(prog)s --get-all-secrets --secrets-output-dir ./my-secrets
+  %(prog)s --get-all-secrets --vault-id ocid1.vault.oc1...
   %(prog)s --escalation
   %(prog)s --all
   %(prog)s --list-bucket sensitive-data-bucket
   %(prog)s --download sensitive-data-bucket flag.txt output.txt
+  %(prog)s --download-all gr-emea-audit-and-metadata
+  %(prog)s --download-all gr-emea-audit-and-metadata ./downloads
   %(prog)s --all --profile junior-dev --output results.json
         """
     )
@@ -667,6 +881,10 @@ Examples:
                            help='Retrieve value of a specific secret by OCID')
     vault_group.add_argument('--secret-output', metavar='FILE',
                            help='Save secret value to file (use with --get-secret)')
+    vault_group.add_argument('--get-all-secrets', action='store_true',
+                           help='Retrieve all accessible secrets and save to files')
+    vault_group.add_argument('--secrets-output-dir', metavar='DIR', default='./secrets',
+                           help='Directory to save retrieved secrets (default: ./secrets)')
     vault_group.add_argument('--vault-id', metavar='VAULT_ID',
                            help='Filter secrets by specific vault OCID')
     
@@ -679,6 +897,8 @@ Examples:
                              help='List objects in specified bucket')
     storage_group.add_argument('-d', '--download', nargs=3, metavar=('BUCKET', 'OBJECT', 'DEST'),
                              help='Download object: BUCKET OBJECT DESTINATION')
+    storage_group.add_argument('--download-all', nargs='+', metavar=('BUCKET', '[OUTPUT_DIR]'),
+                             help='Download all objects from bucket. Usage: BUCKET [optional_output_directory]')
     
     output_group = parser.add_argument_group('Output Options')
     output_group.add_argument('-o', '--output', metavar='FILE',
@@ -694,7 +914,8 @@ Examples:
         args.all, args.user, args.groups, args.user_groups,
         args.policies, args.compartments, args.resources,
         args.escalation, args.list_bucket, args.download,
-        args.vaults, args.secrets, args.get_secret
+        args.vaults, args.secrets, args.get_secret, args.download_all,
+        args.get_all_secrets
     ]
     
     if not any(action_flags):
@@ -762,12 +983,26 @@ Examples:
         if secret_value:
             results["retrieved_secret"] = secret_value
     
+    if args.get_all_secrets:
+        secrets_result = scanner.get_all_secrets(
+            vault_id=args.vault_id,
+            output_dir=args.secrets_output_dir
+        )
+        results["all_secrets"] = secrets_result
+    
     if args.list_bucket:
         results["bucket_objects"] = scanner.list_bucket_objects(args.list_bucket)
     
     if args.download:
         bucket, obj, dest = args.download
         scanner.download_object(bucket, obj, dest)
+    
+    if args.download_all:
+        bucket = args.download_all[0]
+        output_dir = args.download_all[1] if len(args.download_all) > 1 else "."
+        downloaded_files = scanner.download_all_objects(bucket, output_dir)
+        if downloaded_files:
+            results["downloaded_files"] = downloaded_files
     
     if args.output:
         scanner.export_results(results, args.output)
