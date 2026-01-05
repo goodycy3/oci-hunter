@@ -42,7 +42,7 @@ def print_banner():
                   {Colors.ENDC}IAM  |  Vaults  |  Storage{Colors.OKCYAN}
     
              {Colors.ENDC}For Authorized Security Testing Only{Colors.OKCYAN}
-                      {Colors.ENDC}License: MIT{Colors.OKCYAN}
+                        {Colors.ENDC}License: MIT{Colors.OKCYAN}
     
     ════════════════════════════════════════════════════════════
 {Colors.ENDC}
